@@ -1,6 +1,7 @@
 package s3592262.com.example.safecity.ui.screens
 
 import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,11 +19,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 @Composable
 fun ReportScreen(navController: NavController) {
 
+    val context = LocalContext.current
+
     var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Select Category") }
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    val categories = listOf("Pothole", "Noise", "Litter" , "other")
+    val categories = listOf("Pothole", "Noise", "Litter")
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -29,6 +33,8 @@ fun ReportScreen(navController: NavController) {
     ) { bitmap ->
         imageBitmap = bitmap
     }
+
+    var expanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -39,21 +45,19 @@ fun ReportScreen(navController: NavController) {
 
         Text("Report Issue", style = MaterialTheme.typography.headlineSmall)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Description Input
+        // 🔹 Description Field
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Enter description") },
+            label = { Text("Issue Description") },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ FIXED Category Dropdown
-        var expanded by remember { mutableStateOf(false) }
-
+        // 🔹 Category Dropdown
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -66,7 +70,7 @@ fun ReportScreen(navController: NavController) {
                 label = { Text("Category") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()   // 🔥 IMPORTANT FIX
+                    .menuAnchor()
             )
 
             ExposedDropdownMenu(
@@ -87,14 +91,14 @@ fun ReportScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Camera Button
+        // 🔹 Camera Button
         Button(onClick = { cameraLauncher.launch(null) }) {
             Text("Capture Image")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Show Image
+        // Show Image Preview
         imageBitmap?.let {
             Image(
                 bitmap = it.asImageBitmap(),
@@ -107,16 +111,39 @@ fun ReportScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Audio Button (basic)
+        // 🔹 Audio Button (basic)
         Button(onClick = {
-            println("Audio recording started")
+            Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
         }) {
             Text("Record Audio")
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Navigation Buttons
+        // ✅ SUBMIT BUTTON
+        Button(
+            onClick = {
+
+                // Simple validation
+                if (description.isBlank() || category == "Select Category") {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Report Submitted!", Toast.LENGTH_SHORT).show()
+
+                    // Clear form
+                    description = ""
+                    category = "Select Category"
+                    imageBitmap = null
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Submit Report")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Navigation Buttons (for demo)
         Button(onClick = { navController.navigate("map") }) {
             Text("Go to Map")
         }
