@@ -21,7 +21,7 @@ fun ReportScreen(navController: NavController) {
     var category by remember { mutableStateOf("Select Category") }
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    val categories = listOf("Pothole", "Noise", "Litter")
+    val categories = listOf("Pothole", "Noise", "Litter" , "other")
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
