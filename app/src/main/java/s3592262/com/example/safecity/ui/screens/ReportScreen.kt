@@ -51,19 +51,22 @@ fun ReportScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Category Dropdown
+        // ✅ FIXED Category Dropdown
         var expanded by remember { mutableStateOf(false) }
 
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
+
             OutlinedTextField(
                 value = category,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Category") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()   // 🔥 IMPORTANT FIX
             )
 
             ExposedDropdownMenu(
