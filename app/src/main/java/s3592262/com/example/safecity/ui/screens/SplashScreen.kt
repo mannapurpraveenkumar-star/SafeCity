@@ -23,9 +23,9 @@ fun SplashScreen(navController: NavController) {
         )
     }
 
-    // Navigate automatically to ReportScreen after 2 seconds
+    // Navigate automatically to ReportScreen after 1 seconds
     LaunchedEffect(true) {
-        delay(2000)
+        delay(1000)
         navController.navigate("report") {
             popUpTo("splash") { inclusive = true }
         }
