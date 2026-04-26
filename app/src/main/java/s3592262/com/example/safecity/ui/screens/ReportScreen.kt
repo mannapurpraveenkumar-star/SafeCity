@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,137 +24,163 @@ fun ReportScreen(navController: NavController) {
 
     val context = LocalContext.current
 
+    var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Select Category") }
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val categories = listOf("Pothole", "Noise", "Litter")
+    var expanded by remember { mutableStateOf(false) }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
         imageBitmap = bitmap
     }
 
-    var expanded by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Report Issue") },
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+                // 🔙 BACK BUTTON
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.popBackStack()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
 
-        Text("Report Issue", style = MaterialTheme.typography.headlineSmall)
+                // 🏠 HOME BUTTON
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate("home") {
+                            popUpTo(0) // clears back stack
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "Home"
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 🔹 Description Field
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Issue Description") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 🔹 Category Dropdown
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Name
             OutlinedTextField(
-                value = category,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Category") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Your Name (Optional)") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            ExposedDropdownMenu(
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Description
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Issue Description") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Category dropdown
+            ExposedDropdownMenuBox(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onExpandedChange = { expanded = !expanded }
             ) {
-                categories.forEach {
-                    DropdownMenuItem(
-                        text = { Text(it) },
-                        onClick = {
-                            category = it
-                            expanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Category") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    categories.forEach {
+                        DropdownMenuItem(
+                            text = { Text(it) },
+                            onClick = {
+                                category = it
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔹 Camera Button
-        Button(onClick = { cameraLauncher.launch(null) }) {
-            Text("Capture Image")
-        }
+            // Camera
+            Button(onClick = { cameraLauncher.launch(null) }) {
+                Text("Capture Image")
+            }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-        // Show Image Preview
-        imageBitmap?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = "Captured Image",
-                modifier = Modifier
-                    .size(150.dp)
-                    .padding(8.dp)
-            )
-        }
+            imageBitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Captured Image",
+                    modifier = Modifier
+                        .size(150.dp)
+                        .padding(8.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // 🔹 Audio Button (basic)
-        Button(onClick = {
-            Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
-        }) {
-            Text("Record Audio")
-        }
+            // Audio
+            Button(onClick = {
+                Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
+            }) {
+                Text("Record Audio")
+            }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // ✅ SUBMIT BUTTON
-        Button(
-            onClick = {
+            // Submit
+            Button(
+                onClick = {
+                    if (description.isBlank() || category == "Select Category") {
+                        Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Report Submitted!", Toast.LENGTH_SHORT).show()
 
-                // Simple validation
-                if (description.isBlank() || category == "Select Category") {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Report Submitted!", Toast.LENGTH_SHORT).show()
-
-                    // Clear form
-                    description = ""
-                    category = "Select Category"
-                    imageBitmap = null
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Submit Report")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Navigation Buttons (for demo)
-        Button(onClick = { navController.navigate("map") }) {
-            Text("Go to Map")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Button(onClick = { navController.navigate("stats") }) {
-            Text("Go to Stats")
+                        name = ""
+                        description = ""
+                        category = "Select Category"
+                        imageBitmap = null
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Submit Report")
+            }
         }
     }
 }

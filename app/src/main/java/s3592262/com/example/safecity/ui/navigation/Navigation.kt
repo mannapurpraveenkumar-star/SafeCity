@@ -9,7 +9,14 @@ fun AppNavigation() {
 
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "report") {
+    NavHost(
+        navController = navController,
+        startDestination = "home"   // ✅ Home screen first
+    ) {
+
+        composable("home") {
+            HomeScreen(navController)
+        }
 
         composable("splash") {
             SplashScreen(navController)
