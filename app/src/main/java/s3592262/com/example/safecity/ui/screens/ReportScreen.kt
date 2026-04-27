@@ -1,7 +1,15 @@
 package s3592262.com.example.safecity.ui.screens
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.location.Location
+import android.os.Build
+import android.provider.MediaStore
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -15,22 +23,67 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.location.LocationServices
 
 @OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("MissingPermission")
 @Composable
 fun ReportScreen(navController: NavController) {
 
     val context = LocalContext.current
+    val fusedLocationClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Select Category") }
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
+    var currentLatitude by remember { mutableDoubleStateOf(0.0) }
+    var currentLongitude by remember { mutableDoubleStateOf(0.0) }
+
     val categories = listOf("Pothole", "Noise", "Litter")
     var expanded by remember { mutableStateOf(false) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted =
+            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (granted) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+                location?.let {
+                    currentLatitude = it.latitude
+                    currentLongitude = it.longitude
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
+    val selectImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            imageBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(context.contentResolver, it)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+            }
+        }
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
@@ -41,31 +94,23 @@ fun ReportScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Report Issue") },
+                title = { },
 
-                // 🔙 BACK BUTTON
                 navigationIcon = {
                     IconButton(onClick = {
                         navController.popBackStack()
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
 
-                // 🏠 HOME BUTTON
                 actions = {
                     IconButton(onClick = {
                         navController.navigate("home") {
-                            popUpTo(0) // clears back stack
+                            popUpTo("home") { inclusive = true }
                         }
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Home"
-                        )
+                        Icon(Icons.Default.Home, contentDescription = "Home")
                     }
                 }
             )
@@ -80,9 +125,6 @@ fun ReportScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Name
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -92,7 +134,6 @@ fun ReportScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -102,7 +143,6 @@ fun ReportScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Category dropdown
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -135,9 +175,20 @@ fun ReportScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Camera
-            Button(onClick = { cameraLauncher.launch(null) }) {
-                Text("Capture Image")
+            Button(
+                onClick = { selectImageLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Select Image from Files")
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = { cameraLauncher.launch(null) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Capture Image Live")
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -145,7 +196,7 @@ fun ReportScreen(navController: NavController) {
             imageBitmap?.let {
                 Image(
                     bitmap = it.asImageBitmap(),
-                    contentDescription = "Captured Image",
+                    contentDescription = "Selected or Captured Image",
                     modifier = Modifier
                         .size(150.dp)
                         .padding(8.dp)
@@ -154,22 +205,31 @@ fun ReportScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Audio
-            Button(onClick = {
-                Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
-            }) {
+            Button(
+                onClick = {
+                    Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Record Audio")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Submit
             Button(
                 onClick = {
                     if (description.isBlank() || category == "Select Category") {
-                        Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Please fill required fields",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        Toast.makeText(context, "Report Submitted!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Report Submitted!\nLat: $currentLatitude\nLng: $currentLongitude",
+                            Toast.LENGTH_LONG
+                        ).show()
 
                         name = ""
                         description = ""
