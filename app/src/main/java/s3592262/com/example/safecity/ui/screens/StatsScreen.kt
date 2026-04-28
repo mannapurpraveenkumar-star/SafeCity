@@ -1,5 +1,8 @@
 package s3592262.com.example.safecity.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,9 +12,14 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class FirebaseReport(
     val name: String = "",
@@ -20,14 +28,18 @@ data class FirebaseReport(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val imageUrl: String = "",
-    val audioUrl: String = ""
+    val audioUrl: String = "",
+    val timestamp: Long = 0L
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(navController: NavController) {
 
+    val context = LocalContext.current
+
     var reports by remember { mutableStateOf<List<FirebaseReport>>(emptyList()) }
+    var selectedReport by remember { mutableStateOf<FirebaseReport?>(null) }
     var errorMessage by remember { mutableStateOf("") }
 
     DisposableEffect(Unit) {
@@ -49,7 +61,8 @@ fun StatsScreen(navController: NavController) {
                             latitude = doc.getDouble("latitude") ?: 0.0,
                             longitude = doc.getDouble("longitude") ?: 0.0,
                             imageUrl = doc.getString("imageUrl") ?: "",
-                            audioUrl = doc.getString("audioUrl") ?: ""
+                            audioUrl = doc.getString("audioUrl") ?: "",
+                            timestamp = doc.getLong("timestamp") ?: 0L
                         )
                     }
                 }
@@ -66,9 +79,7 @@ fun StatsScreen(navController: NavController) {
                 title = { Text("Reports") },
 
                 navigationIcon = {
-                    IconButton(onClick = {
-                        navController.popBackStack()
-                    }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -113,34 +124,104 @@ fun StatsScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(reports) { report ->
+
+                    val formattedDate = if (report.timestamp != 0L) {
+                        SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault())
+                            .format(Date(report.timestamp))
+                    } else {
+                        "Unknown"
+                    }
+
                     Card(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedReport = report
+                            }
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp)
                         ) {
-                            Text("Category: ${report.category}")
+                            Text("Issue: ${report.category}")
                             Text("Description: ${report.description}")
-                            Text("Name: ${report.name.ifBlank { "Anonymous" }}")
-                            Text("Location: ${report.latitude}, ${report.longitude}")
+                            Text("Reported on: $formattedDate")
 
-                            if (report.imageUrl.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Image uploaded: Yes")
-                            } else {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Image uploaded: No")
-                            }
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                            if (report.audioUrl.isNotBlank()) {
-                                Text("Audio uploaded: Yes")
-                            } else {
-                                Text("Audio uploaded: No")
-                            }
+                            Text("Tap to view full report")
                         }
                     }
                 }
             }
         }
+    }
+
+    selectedReport?.let { report ->
+
+        val formattedDate = if (report.timestamp != 0L) {
+            SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault())
+                .format(Date(report.timestamp))
+        } else {
+            "Unknown"
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                selectedReport = null
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedReport = null
+                }) {
+                    Text("Close")
+                }
+            },
+            title = {
+                Text("Report Details")
+            },
+            text = {
+                Column {
+                    Text("Category: ${report.category}")
+                    Text("Description: ${report.description}")
+                    Text("Name: ${report.name.ifBlank { "Anonymous" }}")
+                    Text("Location: ${report.latitude}, ${report.longitude}")
+                    Text("Reported on: $formattedDate")
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (report.imageUrl.isNotBlank()) {
+                        Text("Image:")
+                        AsyncImage(
+                            model = report.imageUrl,
+                            contentDescription = "Report Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                        )
+                    } else {
+                        Text("Image: Not available")
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (report.audioUrl.isNotBlank()) {
+                        Button(
+                            onClick = {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(report.audioUrl)
+                                )
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Play Audio")
+                        }
+                    } else {
+                        Text("Audio: Not available")
+                    }
+                }
+            }
+        )
     }
 }

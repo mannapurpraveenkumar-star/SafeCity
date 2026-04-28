@@ -1,13 +1,16 @@
 package s3592262.com.example.safecity.ui.screens
 
-
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import s3592262.com.example.safecity.R
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -20,14 +23,24 @@ fun HomeScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center
     ) {
 
+        Image(
+            painter = painterResource(id = R.drawable.safecity_banner),
+            contentDescription = "SafeCity Banner",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         Text(
             text = "SafeCity",
             style = MaterialTheme.typography.headlineLarge
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Report Button
         Button(
             onClick = { navController.navigate("report") },
             modifier = Modifier.fillMaxWidth()
@@ -37,7 +50,6 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Map Button
         Button(
             onClick = { navController.navigate("map") },
             modifier = Modifier.fillMaxWidth()
@@ -47,7 +59,6 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Stats Button
         Button(
             onClick = { navController.navigate("stats") },
             modifier = Modifier.fillMaxWidth()

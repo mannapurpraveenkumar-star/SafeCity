@@ -8,6 +8,7 @@ import android.location.Location
 import android.os.Build
 import android.provider.MediaStore
 import android.widget.Toast
+import java.io.ByteArrayOutputStream
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
@@ -33,6 +35,7 @@ fun ReportScreen(navController: NavController) {
 
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
+    val storage = FirebaseStorage.getInstance()
 
     val fusedLocationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
@@ -98,15 +101,11 @@ fun ReportScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { },
-
                 navigationIcon = {
-                    IconButton(onClick = {
-                        navController.popBackStack()
-                    }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-
                 actions = {
                     IconButton(onClick = {
                         navController.navigate("home") {
@@ -214,7 +213,11 @@ fun ReportScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    Toast.makeText(context, "Audio recording not connected yet", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Audio recording not connected yet",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -238,6 +241,8 @@ fun ReportScreen(navController: NavController) {
                             "category" to category,
                             "latitude" to currentLatitude,
                             "longitude" to currentLongitude,
+                            "imageAttached" to (imageBitmap != null),
+                            "audioAttached" to false,
                             "imageUrl" to "",
                             "audioUrl" to "",
                             "timestamp" to System.currentTimeMillis()
