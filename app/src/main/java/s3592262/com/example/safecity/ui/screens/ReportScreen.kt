@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
@@ -31,6 +32,8 @@ import com.google.android.gms.location.LocationServices
 fun ReportScreen(navController: NavController) {
 
     val context = LocalContext.current
+    val db = FirebaseFirestore.getInstance()
+
     val fusedLocationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
@@ -161,11 +164,11 @@ fun ReportScreen(navController: NavController) {
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    categories.forEach {
+                    categories.forEach { item ->
                         DropdownMenuItem(
-                            text = { Text(it) },
+                            text = { Text(item) },
                             onClick = {
-                                category = it
+                                category = item
                                 expanded = false
                             }
                         )
@@ -205,9 +208,13 @@ fun ReportScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Text("Location: $currentLatitude, $currentLongitude")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
-                    Toast.makeText(context, "Audio recording started", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Audio recording not connected yet", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -225,16 +232,38 @@ fun ReportScreen(navController: NavController) {
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
-                        Toast.makeText(
-                            context,
-                            "Report Submitted!\nLat: $currentLatitude\nLng: $currentLongitude",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        val report = hashMapOf(
+                            "name" to name,
+                            "description" to description,
+                            "category" to category,
+                            "latitude" to currentLatitude,
+                            "longitude" to currentLongitude,
+                            "imageUrl" to "",
+                            "audioUrl" to "",
+                            "timestamp" to System.currentTimeMillis()
+                        )
 
-                        name = ""
-                        description = ""
-                        category = "Select Category"
-                        imageBitmap = null
+                        db.collection("reports")
+                            .add(report)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    context,
+                                    "Report saved to Firestore!",
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                name = ""
+                                description = ""
+                                category = "Select Category"
+                                imageBitmap = null
+                            }
+                            .addOnFailureListener { error ->
+                                Toast.makeText(
+                                    context,
+                                    "Firestore error: ${error.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
